@@ -1,0 +1,47 @@
+export const WIDTH = 1080
+export const HEIGHT = 720
+export const SCORE_DB_NAME = "LeaderboardByScore";
+export const ACCURACY_DB_NAME = "LeaderboardByAccuracy";
+export const ASSETS = {
+    menu: null,
+    btn_easy: null,
+    btn_hard: null,
+    btn_rule: null,
+    btn_open: null,
+    btn_skeleton: null,
+    how         : null,
+    ninja         :null,
+    back          :null,
+    pose_data_1     : null,
+    pose_data_2     : null,
+    home          :null,
+    score         :null,
+    game          :null,
+    leaderboardScene: null,
+    leaderboardIcon: null,
+    sword          : null,
+    unsword          : null,
+    sfx_sword:    null,
+    sfx_knife:    null,
+    sfx_shuriken: null,
+    sfx_openChest:null,
+    sfx_return:null,
+    sfx_BHOME :null,
+    font_huninn  :null,
+    maingame_background : null,
+    HpIcon: null,
+    font: null,
+    game_bg: null,
+    pass:null,
+    NotPass:null,
+    ace:null,
+    bgm_EazyMode :null,
+    bgm_HardMode : null,
+    bgm_menu : null,
+    bgm_score_view :null,
+    head_img: null,
+};
+export var counter = {
+    easy: 0,
+    hard: 0,
+}
