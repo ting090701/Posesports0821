@@ -9,6 +9,22 @@ import { PoseTracker } from "../Objects/APIs/PoseTracker.js";
 import { PoseHandler } from "../Objects/APIs/PoseHandler.js";
 import { IndexedDBHelper } from "../Objects/APIs/IndexedDBHelper.js";
 import { MenuScene } from "./MenuScene.js";
+
+const percentText = (v, digits = 0) => {
+  let n = Number(v);
+  if (!Number.isFinite(n)) n = 0;
+  const pct = n <= 1 ? n * 100 : n;   // 兼容舊資料與新資料
+  return `${pct.toFixed(digits)}%`;
+};
+
+// 轉成非負整數字串：NaN -> "0"，1.9 -> "1"
+const intText = (v) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "0";
+  return String(Math.max(0, Math.trunc(n)));
+};
+
+
 export class LeaderboardScene extends IScene {
   static instance = null;
 
@@ -43,13 +59,13 @@ export class LeaderboardScene extends IScene {
     this.add(this.title);
 
     // 左側：簡單模式
-    this.easyTitle = new DrawableText(this.p, "簡單模式", 36);
+    this.easyTitle = new DrawableText(this.p, "簡單模式(通過率)", 36);
     this.easyTitle.position.set(WIDTH*0.25 + 50, 140);
     this.easyTitle.textAlign = this.p.CENTER;
     this.add(this.easyTitle);
 
     // 右側：困難模式
-    this.hardTitle = new DrawableText(this.p, "困難模式", 36);
+    this.hardTitle = new DrawableText(this.p, "困難模式(通過次數)", 36);
     this.hardTitle.position.set(WIDTH*0.75, 140);
     this.hardTitle.textAlign = this.p.CENTER;
     this.add(this.hardTitle);
@@ -123,9 +139,9 @@ export class LeaderboardScene extends IScene {
         if(entry.name == label){
           row.txt.fillColor = this.p.color(255,229,61);
           row.txt.strokeColor = this.p.color(0);
-          row.txt.text = `第${i+1}名： ${entry.accuracy.toFixed(2)}`; 
+          row.txt.text = `第${i+1}名： ${percentText(entry.accuracy, 2)}`; 
         }else{
-        row.txt.text = `第${i+1}名： ${entry.accuracy.toFixed(2)}`;
+          row.txt.text = `第${i+1}名： ${percentText(entry.accuracy, 2)}`;
         }
         if (entry.image) {
           this.p.loadImage(
@@ -163,9 +179,9 @@ export class LeaderboardScene extends IScene {
         if(entry.name == label){
           row.txt.fillColor = this.p.color(255,229,61);
           row.txt.strokeColor = this.p.color(0);
-          row.txt.text = `第${i+1}名： ${entry.score.toFixed(2)}`; 
+          row.txt.text = `第${i+1}名： ${intText(entry.score)}`; 
         }else{
-          row.txt.text = `第${i+1}名： ${entry.score.toFixed(2)}`;
+          row.txt.text = `第${i+1}名： ${intText(entry.score)}`;
         }
         if (entry.image) {
           this.p.loadImage(
