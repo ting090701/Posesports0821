@@ -53,6 +53,13 @@ export class HardGameScene extends IScene{
         this.generatorManager = new GeneratorManager();
         this.timer = new WaitTimer();
 
+        this.generatorManager = new GeneratorManager();
+        this.timer = new WaitTimer();
+
+
+        this.activeBoards = new Set();          // ★ 新增
+        this.maxConcurrentBoards = 1; 
+
         // let go_score_button = new RectButton(this.p,300,100,func_to_scor)
         // go_score_button.position.x = 800
         // go_score_button.position.y = 600
@@ -96,7 +103,7 @@ export class HardGameScene extends IScene{
         this.TimeText.textAlign = "center";
         instance.add(this.TimeText)
 
-        this.ScoreText = new DrawableText(this.p,"分數: 0",30)
+        this.ScoreText = new DrawableText(this.p,"通過次數: 0",30)
         this.ScoreText.position.x = WIDTH -140
         this.ScoreText.position.y = HEIGHT / 8
         this.ScoreText.textAlign = "center";
@@ -125,46 +132,180 @@ export class HardGameScene extends IScene{
 
     *GameFlow(){
         this.CountdownText.isActive = true;
-        for(let i =0; i < 3; i++){
-            console.log(3-i);
-            this.CountdownText.text = (3-i).toString();
-            
-            yield  *this.timer.delay(1000);
+        for (let i = 0; i < 3; i++){
+            this.CountdownText.text = (3 - i).toString();
+            yield *this.timer.delay(1000);
         }
         this.CountdownText.text = "開始!!!";
-        yield  *this.timer.delay(1000);
+        yield *this.timer.delay(1000);
         this.CountdownText.isActive = false;
+
         this.generatorManager.start(this.TimerCount());
 
         while (true) {
-            console.log("生成板子");
-            if(Math.floor(Math.random() * 3) === 0){
-                yield  *this.generatorManager.start(this.BoxState(Math.floor(Math.random() * 2)+2));
+            // ★ 等待場上沒有板子（鎖）
+            while (this.activeBoards.size >= this.maxConcurrentBoards || this._hasVisibleBoard()){
+            yield *this.timer.delay(20);
             }
-      
-            let board = this.boardList.add_board(this.JudgePose.bind(this) , this.boardEnd.bind(this));
-            const target = Math.floor(Math.random() * 10) + 1;            // 1..10
-            const base   = (board.speed + board.addSpeed) || 1;           // 避免除以 0
-            if (typeof board.setSpeedScale === "function") {
-                board.setSpeedScale(target / base);                         // ★ (speed+addSpeed)*scale = target
-            } else {
-                board.speed = target; board.addSpeed = 0;                   // 後備方案
-            }
-            this.judgePoseState.set(board, false); 
-            yield  *this.timer.delay(4000 - Math.min(this.time*5 ,1000 )); 
-        }
-        
-    }
-    *BoxState(round){
-        yield *this.timer.delay(2000);
-        for(let i = 0; i < round; i++){
-            let round = Math.floor(Math.random() * 3) + 1; // 隨機生成1到3之間的整數
-            let board = this.boardList.add_board(this.JudgePose.bind(this) , this.boardEnd.bind(this) ,round ,17); 
-            this.judgePoseState.set(board, false); 
-            yield  *this.timer.delay(2000 - Math.min(this.time*1 ,500 )); // 每個板子間隔時間隨機減少
-        }
 
+
+            // ★ BoxState 整段串行執行，避免與一般板併發
+            if (Math.floor(Math.random() * 3) === 0){
+                yield *this.BoxState(Math.floor(Math.random() * 2) + 2); // ← 不再用 generatorManager.start
+                continue;
+            }
+
+            // 一般單塊板
+            let board = this.boardList.add_board(this.JudgePose.bind(this), this.boardEnd.bind(this));
+            this.activeBoards.add(board); // ★ 登記存活
+
+            // 保留你的速度標定
+            const target = Math.floor(Math.random() * 8) + 5;
+            const base   = (board.speed + board.addSpeed) || 1;
+            if (typeof board.setSpeedScale === "function") {
+            board.setSpeedScale(target / base);
+            } else {
+            board.speed = target; board.addSpeed = 0;
+            }
+            this.judgePoseState.set(board, false);
+
+            // ★ 必須等這塊板真正離場
+            yield *this.waitBoardGone(board);
+
+            // （可保留你的節奏延遲）
+            yield *this.timer.delay(1000 - Math.min(this.time * 5, 1000));
+        }
     }
+
+
+
+    *BoxState(round){
+  // 前置延遲（保留原行為）
+        yield *this.timer.delay(100);
+
+        for (let i = 0; i < round; i++){
+            // ★ 等待場上沒有板子（鎖）
+            while (this.activeBoards.size >= this.maxConcurrentBoards || this._hasVisibleBoard()){
+            yield *this.timer.delay(20);
+            }
+
+
+            // ★ 修正變數遮蔽：改用 wave 代表每次生成的參數
+            const wave = Math.floor(Math.random() * 3) + 1;
+
+            // 生成板子
+            const board = this.boardList.add_board(
+            this.JudgePose.bind(this),
+            this.boardEnd.bind(this),
+            wave, 17
+            );
+
+            // ★ 登記存活，讓 waitBoardGone 能正確阻塞
+            this.activeBoards.add(board);
+            this.judgePoseState.set(board, false);
+
+            // （可選）保留你的速度標定邏輯
+            const target = Math.floor(Math.random() * 5) + 1;
+            const base   = (board.speed + board.addSpeed) || 1;
+            if (typeof board.setSpeedScale === "function") {
+            board.setSpeedScale(target / base);
+            } else {
+            board.speed = target; board.addSpeed = 0;
+            }
+
+            // ★ 關鍵：等待該板子真正離場後，才進入下一輪
+            yield *this.waitBoardGone(board);
+
+            // 保留你的節奏延遲（不影響「不重疊」的保證）
+            yield *this.timer.delay(1000 - Math.min(this.time * 1, 500));
+        }
+    }
+
+    *waitBoardGone(board){
+        const start = Date.now();
+        const TIMEOUT_MS = 20000;
+
+        // 查清單：你的專案把 hard 也放在 easyBoardList，用兩者都檢一下最保險
+        const stillInList = (b) => {
+            const l1 = this.boardList?.easyBoardList;
+            const l2 = this.boardList?.hardBoardList;
+            const inL1 = Array.isArray(l1) ? l1.includes(b) : false;
+            const inL2 = Array.isArray(l2) ? l2.includes(b) : false;
+            if (!Array.isArray(l1) && !Array.isArray(l2)) return true; // 找不到清單就保守視為還在
+            return inL1 || inL2;
+        };
+
+        // 嚴格的「完全離場」：包圍盒整個超出畫面
+        const strictlyOffscreen = (b) => {
+            try {
+            const sx = b.scale?.x ?? 1, sy = b.scale?.y ?? 1;
+            const w = (b.width ?? 0) * sx;
+            const h = (b.height ?? 0) * sy;
+            const cx = b.position?.x ?? 0;
+            const cy = b.position?.y ?? 0;
+            const left = cx - w/2, right = cx + w/2;
+            const top  = cy - h/2, bottom = cy + h/2;
+            // 完全離開四邊任一側才算離場（避免半露）
+            return (right < 0) || (left > WIDTH) || (bottom < 0) || (top > HEIGHT);
+            } catch { return false; }
+        };
+
+        while (true) {
+            if (!board) break;
+
+            const inactive = (board.isActive === false) || (board.destroyed === true);
+            const notInList = !stillInList(board);
+            const offscreen = strictlyOffscreen(board);
+
+            // ✅ 只有在「完全離場」或「已失效且確定不在清單」才解鎖
+            if (offscreen || (inactive && notInList)) {
+            this.activeBoards?.delete(board);
+            break;
+            }
+
+            if (Date.now() - start > TIMEOUT_MS) {
+            console.warn("waitBoardGone timeout → 強制解鎖（請檢查 BoardList 的移除時機）");
+            this.activeBoards?.delete(board);
+            break;
+            }
+            yield *this.timer.delay(30);
+        }
+    }
+
+    // === 可視板檢測（雙重閘門用） ===
+    _hasVisibleBoard(){
+    // 若你的清單區分 easy / hard，可以合併檢查兩個清單
+    const list = [
+        ...(this.boardList?.easyBoardList ?? []),
+        ...(this.boardList?.hardBoardList ?? []),
+    ];
+    for (const b of list){
+        if (!b) continue;
+        const sx = b.scale?.x ?? 1, sy = b.scale?.y ?? 1;
+        const w = (b.width ?? 0) * sx;
+        const h = (b.height ?? 0) * sy;
+        const cx = b.position?.x ?? 0;
+        const cy = b.position?.y ?? 0;
+        const left = cx - w/2, right = cx + w/2;
+        const top  = cy - h/2, bottom = cy + h/2;
+        // 與畫面相交 ⇒ 仍可見
+        const intersect = !(right < 0 || left > WIDTH || bottom < 0 || top > HEIGHT);
+        if (intersect) return true;
+    }
+    return false;
+    }
+
+
+
+    _on_exit(){
+        this.generatorManager.clearAll();
+        this.judgePoseState.clear();
+        this.boardList.clear();
+        if (this.activeBoards) this.activeBoards.clear(); // ← 必留
+    }
+
+
+
     *TimerCount() {
         while (true) {
             this.time++;
@@ -176,6 +317,10 @@ export class HardGameScene extends IScene{
 
 
     boardEnd(board) {
+        //if (this.activeBoards && this.activeBoards.has(board)) {
+        //this.activeBoards.delete(board);
+        //}
+
         if(!this.judgePoseState.has(board) || !board){
             console.log("板子已經被刪除或不存在");
             return;
@@ -186,7 +331,7 @@ export class HardGameScene extends IScene{
             board.changeColor(true);                       // ★ 通過：板子上綠
             if (this.feedback) this.feedback.show("green", 220);
             this.Score++;
-            this.ScoreText.text = "分數: " + this.Score;
+            this.ScoreText.text = "通過次數: " + this.Score;
         }else{
             ASSETS.NotPass.play();
             console.log("判斷失敗");
@@ -231,7 +376,7 @@ export class HardGameScene extends IScene{
         this.life = 3;
         this.Score =0;
         this.TimeText.text = "時間: " + this.time+"秒";
-        this.ScoreText.text = "分數: " + this.Score;
+        this.ScoreText.text = "通過次數: " + this.Score;
         
         this.hpbar.currentHp = this.life;
 

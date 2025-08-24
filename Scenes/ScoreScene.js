@@ -132,7 +132,7 @@ export class ScoreScene extends IScene{
         this.ScoreText.text = `恭喜完成簡單模式:\n通過率: ${rate.toFixed(2)}%`;
         } else {
         const score = HardGameScene.instance.Score;
-        this.ScoreText.text = `恭喜完成困難模式:\n分數為: ${score}`;
+        this.ScoreText.text = `恭喜完成困難模式:\n通過次數為: ${score}`;
         }
 
         // --- 1. 準備要寫入資料庫的各種參數 ---

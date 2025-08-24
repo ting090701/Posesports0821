@@ -62,7 +62,7 @@ export class PoseDrawer extends IObject{
         // 繪製骨架、頭與脖子、手腕
         const scale = {
             skeleton: size / 5.5,
-            head: size / 1.5,
+            head: size / 2.0,
             wrist: size / 4.5
         };
         this._drawSkeleton(landmarks, scale.skeleton);
@@ -126,7 +126,7 @@ export class PoseDrawer extends IObject{
         this.p.line(headPos.x, headPos.y, neckPos.x, neckPos.y);
         // 畫頭
         this.p.noStroke();
-        this.p.fill("rgb(0, 0, 0)");
+        this.p.fill("rgb(0,0,0)");
         this.p.ellipse(headPos.x, headPos.y, size, size);
         // 畫紅色綁帶
         const bandHeight = size * 0.2;
