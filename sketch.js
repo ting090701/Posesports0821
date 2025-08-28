@@ -98,11 +98,11 @@ const main_sketch = (p)=>{
         // scene_manager = new SceneManager(p)
 
 
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= 11; i++) {
             let data = p.loadJSON(`Data/easyPoseJson/pose_snapshot-${i}.json`);
             easyKeypointDataList.push(data);
         }
-        for (let i = 1; i <= 7; i++) {
+        for (let i = 1; i <= 26; i++) {
             let data = p.loadJSON(`Data/hardPoseJson/pose_snapshot-${i}.json`);
             hardKeypointDataList.push(data);
         }

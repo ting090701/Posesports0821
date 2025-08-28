@@ -160,7 +160,7 @@ export class HardGameScene extends IScene{
             this.activeBoards.add(board); // ★ 登記存活
 
             // 保留你的速度標定
-            const target = Math.floor(Math.random() * 8) + 5;
+            const target = Math.floor(Math.random() * 6) + 7;
             const base   = (board.speed + board.addSpeed) || 1;
             if (typeof board.setSpeedScale === "function") {
             board.setSpeedScale(target / base);
