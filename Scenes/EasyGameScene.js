@@ -94,7 +94,7 @@ export class EasyGameScene extends IScene{
         this.generatorManager = new GeneratorManager();
         this.timer = new WaitTimer();
 
-        this.TimeText = new DrawableText(this.p,"時間: 0/120秒" ,30)
+        this.TimeText = new DrawableText(this.p,"時間: 0/75秒" ,30)
         this.TimeText.position.x = 150  
         this.TimeText.position.y = HEIGHT / 8
         this.TimeText.textAlign = "center";
@@ -146,8 +146,8 @@ export class EasyGameScene extends IScene{
         
         while (true) {
             this.time++;
-            this.TimeText.text = "時間: " + this.time+"/120秒";
-            if(this.time >= 120){
+            this.TimeText.text = "時間: " + this.time+"/75秒";
+            if(this.time >= 75){
                 SceneManager.instance.changeScene(SceneEnum.SCORE);
             }
             yield *this.timer.delay(1000); // 每秒更新一次
@@ -297,7 +297,7 @@ export class EasyGameScene extends IScene{
         this.passCount = 0;
         this.allCount = 0;
         this.ScoreText.text = "通過率: " + (this.allCount !== 0 ? (this.passCount / this.allCount * 100).toFixed(2) : "0.00") + "%";
-        this.TimeText.text = "時間: " + this.time+"/120秒";
+        this.TimeText.text = "時間: " + this.time+"/75秒";
     }
     _on_exit(){
         this.generatorManager.clearAll();
