@@ -131,7 +131,8 @@ export class ScoreScene extends IScene{
         const rate = all === 0 ? 0 : pass / all * 100;
         this.ScoreText.text = `恭喜完成簡單模式:\n通過率: ${rate.toFixed(2)}%`;
         } else {
-        const score = HardGameScene.instance.Score;
+        //const score = HardGameScene.instance.Score;
+        const score = HardGameScene.lastScore; 
         this.ScoreText.text = `恭喜完成困難模式:\n通過次數為: ${score}`;
         }
 
@@ -143,7 +144,7 @@ export class ScoreScene extends IScene{
         const mode    = isEasy ? ACCURACY_DB_NAME : SCORE_DB_NAME;
         const value   = isEasy
             ? (EasyGameScene.instance.passCount / EasyGameScene.instance.allCount)
-            : HardGameScene.instance.Score;
+            : HardGameScene.lastScore;
 
         // --- 1. 用 isDuplicateFace 比距離 ---
         // const { isDuplicate, existing, distance } =
